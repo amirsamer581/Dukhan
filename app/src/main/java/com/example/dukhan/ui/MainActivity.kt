@@ -2,7 +2,6 @@ package com.example.dukhan.ui
 
 import android.os.Bundle
 import android.widget.SearchView
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
@@ -41,7 +40,7 @@ class MainActivity : AppCompatActivity() {
         setupObservers()
     }
 
-    private fun setupRecyclerView(){
+    private fun setupRecyclerView() {
         binding.itemRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = itemAdapter
@@ -51,24 +50,24 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun setupSearch(){
+    private fun setupSearch() {
         binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return false
             }
+
             override fun onQueryTextChange(newText: String?): Boolean {
                 viewModel.setSearchQuery(newText ?: "")
                 return true
             }
         })
-        }
+    }
 
-    private fun setupObservers(){
+    private fun setupObservers() {
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel.itemStateFlowCombine
                 .flowWithLifecycle(lifecycle, Lifecycle.State.STARTED)
                 .collect { items ->
-                    Toast.makeText(this@MainActivity, "Items fetched", Toast.LENGTH_LONG).show()
                     itemAdapter = ItemAdapter(items)
                     binding.itemRecyclerView.adapter = itemAdapter
                 }
