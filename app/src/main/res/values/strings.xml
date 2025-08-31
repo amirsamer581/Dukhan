@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Dukhan</string>
+    <string name="item_category">Item Category</string>
+    <string name="item_name">Item Name</string>
+    <string name="item_qty">Item QTY</string>
+    <string name="dukhan">Dukhan</string>
+</resources>

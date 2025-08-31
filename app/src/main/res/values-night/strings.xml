@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="item_category">Item Category</string>
+    <string name="item_name">Item Name</string>
+    <string name="item_qty">Item QTY</string>
+    <string name="dukhan">Dukhan</string>
+</resources>
