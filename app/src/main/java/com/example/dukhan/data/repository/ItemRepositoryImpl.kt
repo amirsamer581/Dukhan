@@ -32,34 +32,37 @@ class ItemRepositoryImpl @Inject constructor(
     private val itemDao: ItemDao
 ) : ItemRepository {
 
-    override suspend fun getItems(): Flow<List<InventoryEntity>> = flow {
-        Log.d("ItemRepositoryImpl", "Fetching Items...")
-        val localItems = itemDao.getAllItems().first()
+    private val localItems = itemDao.getAllItems()
 
-        if (localItems.isNotEmpty()) {
-            Log.d(ITEM_REPOSITORY_IMPL, "Items found in local database")
-            emit(localItems.map { items ->
-                InventoryEntity(
-                    itemNO = items.itemNO,
-                    name = items.name,
-                    category = items.category,
-                    qty = items.qty
+    override fun getItems(): Flow<List<InventoryEntity>> = flow {
+        if (localItems.first().isNotEmpty()) {
+            try {
+                Log.d(ITEM_REPOSITORY_IMPL, "Fetching Items from local database")
+                emit(localItems.first().map { items ->
+                    InventoryEntity(
+                        itemNO = items.itemNO,
+                        name = items.name,
+                        category = items.category,
+                        qty = items.qty
 
+                    )
+                })
+            } catch (e: Exception) {
+                Log.e(ITEM_REPOSITORY_IMPL, "Error fetching items", e)
+                emit(
+                    listOf(
+                        InventoryEntity(
+                            itemNO = "Error",
+                            name = "Error fetching items",
+                            category = "Error",
+                            qty = 0.0
+                        )
+                    )
                 )
-            })
-        } else {
-            Log.d(
-                ITEM_REPOSITORY_IMPL,
-                "Items not found in local database, fetching from remote..."
-            )
-            val itemMaster = itemMasterApiService.getItemMaster().itemsMaster
-            val itemBalance = itemBalanceApiService.getItemBalance().salesManItemsBalance
-            val mergedData = mergeData(itemMaster, itemBalance)
-            itemDao.insertALLItems(mergedData)
-            emit(mergedData)
+            }
         }
     }.catch { exception ->
-        Log.e(ITEM_REPOSITORY_IMPL, "Error fetching items", exception)
+        Log.e(ITEM_REPOSITORY_IMPL, "Error fetching items from local database", exception)
         emit(
             listOf(
                 InventoryEntity(
@@ -71,6 +74,24 @@ class ItemRepositoryImpl @Inject constructor(
             )
         )
     }.flowOn(Dispatchers.IO)
+
+    override suspend fun lastSync() {
+        try {
+            Log.d(ITEM_REPOSITORY_IMPL, "Refetching from remote...")
+            val itemMaster = itemMasterApiService.getItemMaster().itemsMaster
+            val itemBalance = itemBalanceApiService.getItemBalance().salesManItemsBalance
+            val mergedData = mergeData(itemMaster, itemBalance)
+            if (localItems.first().isNotEmpty()) {
+                itemDao.insertALLItems(mergedData)
+                Log.d(ITEM_REPOSITORY_IMPL, "Items cleared and inserted into local database")
+            } else {
+                itemDao.insertALLItems(mergedData)
+                Log.d(ITEM_REPOSITORY_IMPL, "Items inserted into local database")
+            }
+        } catch (e: Exception) {
+            Log.e(ITEM_REPOSITORY_IMPL, "Error fetching items from remote", e)
+        }
+    }
 
     fun mergeData(
         itemMaster: List<ItemMaster>,

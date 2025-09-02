@@ -16,7 +16,10 @@ import javax.inject.Inject
 class GetItemsUseCase @Inject constructor(
     private val itemRepository: ItemRepository) {
 
-    suspend fun observeItemsUseCase() : Flow<List<InventoryEntity>>{
+    fun observeItemsUseCase() : Flow<List<InventoryEntity>>{
         return itemRepository.getItems()
+    }
+    suspend fun lastSync() {
+        itemRepository.lastSync()
     }
 }

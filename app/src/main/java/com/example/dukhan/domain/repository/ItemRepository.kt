@@ -4,5 +4,7 @@ import com.example.dukhan.domain.model.InventoryEntity
 import kotlinx.coroutines.flow.Flow
 
 interface ItemRepository {
-    suspend fun getItems() : Flow<List<InventoryEntity>>
+    fun getItems() : Flow<List<InventoryEntity>>
+
+    suspend fun lastSync()
 }

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.example.dukhan.domain.model.InventoryEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -18,4 +19,13 @@ interface ItemDao {
 
     @Query("SELECT * FROM inventory")
     fun getAllItems(): Flow<List<InventoryEntity>>
+
+    @Query("DELETE FROM inventory")
+    suspend fun clearAllItems()
+
+    @Transaction
+    suspend fun refreshItems(item: List<InventoryEntity>) {
+        clearAllItems()
+        insertALLItems(item)
+    }
 }

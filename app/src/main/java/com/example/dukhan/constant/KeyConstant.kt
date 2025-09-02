@@ -7,6 +7,4 @@ object KeyConstant {
 
     // ItemRepositoryImpl
     const val ITEM_REPOSITORY_IMPL = "ItemRepositoryImpl"
-
-    const val ITEM_VIEWMODEL_TAG = "ItemViewModelTag"
 }

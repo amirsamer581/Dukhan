@@ -1,20 +1,19 @@
 package com.example.dukhan.ui.viewModel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.dukhan.constant.KeyConstant.ITEM_VIEWMODEL_TAG
 import com.example.dukhan.domain.model.InventoryEntity
 import com.example.dukhan.domain.useCase.GetItemsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -33,29 +32,28 @@ class ItemViewModel @Inject constructor(
     private val getItemsUseCase: GetItemsUseCase
 ) : ViewModel() {
 
+    init {
+        refresh()
+    }
+
     private val _searchQuery = MutableStateFlow("")
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
     }
 
+    fun refresh() {
+        viewModelScope.launch {
+            getItemsUseCase.lastSync()
+        }
+    }
+
     var itemStateFlow: StateFlow<List<InventoryEntity>> = flow {
+        delay(5000L)
         emitAll(getItemsUseCase.observeItemsUseCase())
-    }.catch { exception ->
-        Log.e(ITEM_VIEWMODEL_TAG, "Error in ViewModel Items flow", exception)
-        emit(
-            listOf(
-                InventoryEntity(
-                    itemNO = "Error $exception",
-                    name = "Error",
-                    category = "Error",
-                    qty = 0.0
-                )
-            )
-        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000L),
-        listOf(
+        initialValue = listOf(
             InventoryEntity(
                 itemNO = "Loading...",
                 name = "Loading...",
@@ -74,6 +72,7 @@ class ItemViewModel @Inject constructor(
         } else {
             items.filter { item ->
                 item.name.contains(searchQuery, ignoreCase = true)
+                        || item.category.contains(searchQuery, ignoreCase = true)
             }
         }
     }.stateIn(

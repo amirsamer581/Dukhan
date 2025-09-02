@@ -30,20 +30,25 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val viewModel: ItemViewModel by viewModels()
-    private var itemAdapter: ItemAdapter = ItemAdapter(emptyList())
+    private lateinit var itemAdapter: ItemAdapter //= ItemAdapter(emptyList())
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        setOnRefreshListener()
         setupRecyclerView()
         setupSearch()
         setupObservers()
+    }
+    private fun setOnRefreshListener() {
+        binding.button.setOnClickListener {
+            viewModel.refresh()
+        }
     }
 
     private fun setupRecyclerView() {
         binding.itemRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = itemAdapter
         }
         binding.itemRecyclerView.addItemDecoration(
             DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
