@@ -43,7 +43,7 @@ class ItemViewModel @Inject constructor(
         }
     }
 
-    var allItems = getItemsUseCase.observeItemsUseCase()
+    private var allItems = getItemsUseCase.observeItemsUseCase()
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000L),
