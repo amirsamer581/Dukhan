@@ -2,16 +2,12 @@ package com.example.dukhan.ui.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.dukhan.domain.model.InventoryEntity
 import com.example.dukhan.domain.useCase.GetItemsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -47,24 +43,15 @@ class ItemViewModel @Inject constructor(
         }
     }
 
-    var itemStateFlow: StateFlow<List<InventoryEntity>> = flow {
-        delay(5000L)
-        emitAll(getItemsUseCase.observeItemsUseCase())
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000L),
-        initialValue = listOf(
-            InventoryEntity(
-                itemNO = "Loading...",
-                name = "Loading...",
-                category = "Loading...",
-                qty = 0.0
+    var allItems = getItemsUseCase.observeItemsUseCase()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000L),
+                initialValue = emptyList()
             )
-        )
-    )
 
-    val itemStateFlowCombine: StateFlow<List<InventoryEntity>> = combine(
-        itemStateFlow,
+    val filteredItems = combine(
+        allItems,
         _searchQuery
     ) { items, searchQuery ->
         if (searchQuery.isEmpty()) {
@@ -78,13 +65,6 @@ class ItemViewModel @Inject constructor(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000L),
-        initialValue = listOf(
-            InventoryEntity(
-                itemNO = "Loading...",
-                name = "Loading...",
-                category = "Loading...",
-                qty = 0.0
-            )
-        )
+        initialValue = emptyList()
     )
 }

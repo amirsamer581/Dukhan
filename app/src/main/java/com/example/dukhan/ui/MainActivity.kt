@@ -10,6 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.dukhan.databinding.ActivityMainBinding
+import com.example.dukhan.domain.model.InventoryEntity
 import com.example.dukhan.ui.adapter.ItemAdapter
 import com.example.dukhan.ui.viewModel.ItemViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -30,7 +31,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val viewModel: ItemViewModel by viewModels()
-    private lateinit var itemAdapter: ItemAdapter //= ItemAdapter(emptyList())
+    private lateinit var itemAdapter: ItemAdapter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -40,19 +41,31 @@ class MainActivity : AppCompatActivity() {
         setupSearch()
         setupObservers()
     }
+
     private fun setOnRefreshListener() {
-        binding.button.setOnClickListener {
-            viewModel.refresh()
+        binding.apply {
+            binding.refreshBtn.setOnClickListener {
+                viewModel.refresh()
+                searchView.setQuery("", false)
+                searchView.clearFocus()
+            }
+            binding.swipeRefreshLayout.setOnRefreshListener {
+                viewModel.refresh()
+                searchView.setQuery("", false)
+                searchView.clearFocus()
+                swipeRefreshLayout.isRefreshing = false
+            }
         }
     }
 
     private fun setupRecyclerView() {
         binding.itemRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
+            addItemDecoration(
+                DividerItemDecoration(this@MainActivity,
+                    DividerItemDecoration.VERTICAL)
+            )
         }
-        binding.itemRecyclerView.addItemDecoration(
-            DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
-        )
     }
 
     private fun setupSearch() {
@@ -70,12 +83,28 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupObservers() {
         lifecycleScope.launch(Dispatchers.Main) {
-            viewModel.itemStateFlowCombine
+            viewModel.filteredItems
                 .flowWithLifecycle(lifecycle, Lifecycle.State.STARTED)
                 .collect { items ->
-                    itemAdapter = ItemAdapter(items)
-                    binding.itemRecyclerView.adapter = itemAdapter
+                    if (items.isNotEmpty()) {
+                        updateRecycleView(items)
+                    } else {
+                        updateRecycleView(listOf(
+                                InventoryEntity(
+                                    itemNO = "No data found",
+                                    name = "No data found",
+                                    category = "No data found",
+                                    qty = 0.0
+                                )
+                            )
+                        )
+                    }
                 }
         }
+    }
+
+    private fun updateRecycleView(list : List<InventoryEntity>){
+        itemAdapter = ItemAdapter(list)
+        binding.itemRecyclerView.adapter = itemAdapter
     }
 }

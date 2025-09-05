@@ -11,10 +11,9 @@ import com.example.dukhan.domain.model.ItemMaster
 import com.example.dukhan.domain.repository.ItemRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 /**
@@ -32,48 +31,23 @@ class ItemRepositoryImpl @Inject constructor(
     private val itemDao: ItemDao
 ) : ItemRepository {
 
-    private val localItems = itemDao.getAllItems()
+    private val localItems by lazy {
+        itemDao.getAllItems()
+    }
 
-    override fun getItems(): Flow<List<InventoryEntity>> = flow {
-        if (localItems.first().isNotEmpty()) {
-            try {
-                Log.d(ITEM_REPOSITORY_IMPL, "Fetching Items from local database")
-                emit(localItems.first().map { items ->
+    override fun getItems(): Flow<List<InventoryEntity>> {
+        return localItems.map { items ->
+                items.map { entity ->
                     InventoryEntity(
-                        itemNO = items.itemNO,
-                        name = items.name,
-                        category = items.category,
-                        qty = items.qty
-
+                        itemNO = entity.itemNO,
+                        name = entity.name,
+                        category = entity.category,
+                        qty = entity.qty
                     )
-                })
-            } catch (e: Exception) {
-                Log.e(ITEM_REPOSITORY_IMPL, "Error fetching items", e)
-                emit(
-                    listOf(
-                        InventoryEntity(
-                            itemNO = "Error",
-                            name = "Error fetching items",
-                            category = "Error",
-                            qty = 0.0
-                        )
-                    )
-                )
+                }
             }
-        }
-    }.catch { exception ->
-        Log.e(ITEM_REPOSITORY_IMPL, "Error fetching items from local database", exception)
-        emit(
-            listOf(
-                InventoryEntity(
-                    itemNO = "Error",
-                    name = "Error fetching items",
-                    category = "Error",
-                    qty = 0.0
-                )
-            )
-        )
-    }.flowOn(Dispatchers.IO)
+            .flowOn(Dispatchers.IO)
+    }
 
     override suspend fun lastSync() {
         try {
@@ -82,7 +56,7 @@ class ItemRepositoryImpl @Inject constructor(
             val itemBalance = itemBalanceApiService.getItemBalance().salesManItemsBalance
             val mergedData = mergeData(itemMaster, itemBalance)
             if (localItems.first().isNotEmpty()) {
-                itemDao.insertALLItems(mergedData)
+                itemDao.refreshItems(mergedData)
                 Log.d(ITEM_REPOSITORY_IMPL, "Items cleared and inserted into local database")
             } else {
                 itemDao.insertALLItems(mergedData)
@@ -93,7 +67,7 @@ class ItemRepositoryImpl @Inject constructor(
         }
     }
 
-    fun mergeData(
+    private fun mergeData(
         itemMaster: List<ItemMaster>,
         itemBalance: List<ItemBalance>
     ): List<InventoryEntity> {
